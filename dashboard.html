@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Météo Paris</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #e0e6f0;
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: #a8d8ff;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #6b8caa;
+      margin-bottom: 32px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto 32px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(168,216,255,0.15);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .card-icon { font-size: 2.2rem; margin-bottom: 8px; }
+    .card-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #6b8caa; margin-bottom: 6px; }
+    .card-value { font-size: 2rem; font-weight: 600; color: #a8d8ff; }
+    .card-unit  { font-size: 1rem; color: #6b8caa; margin-left: 2px; }
+    .card-sub   { font-size: 0.8rem; color: #6b8caa; margin-top: 4px; }
+
+    .description-card {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(168,216,255,0.15);
+      border-radius: 16px;
+      padding: 20px 28px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      font-size: 1.1rem;
+      color: #c8dff0;
+    }
+
+    .section-title {
+      max-width: 900px;
+      margin: 0 auto 12px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #6b8caa;
+    }
+
+    /* Hourly chart */
+    .chart-card {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(168,216,255,0.15);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+      overflow-x: auto;
+    }
+
+    .chart-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #6b8caa;
+      margin-bottom: 16px;
+    }
+
+    .bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+    }
+
+    .bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 28px; }
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.5s ease;
+      position: relative;
+    }
+    .bar.temp  { background: linear-gradient(to top, #0f3460, #a8d8ff); }
+    .bar.rain  { background: linear-gradient(to top, #0f3460, #4fc3f7); }
+    .bar-label { font-size: 0.6rem; color: #6b8caa; margin-top: 4px; }
+    .bar-val   { font-size: 0.65rem; color: #a8d8ff; margin-bottom: 2px; }
+
+    /* Daily forecast */
+    .daily-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto 32px;
+    }
+
+    .day-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(168,216,255,0.15);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .day-name  { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #6b8caa; margin-bottom: 8px; }
+    .day-temps { font-size: 1.4rem; font-weight: 600; color: #a8d8ff; }
+    .day-min   { font-size: 1rem; color: #6b8caa; }
+    .day-rain  { font-size: 0.8rem; color: #4fc3f7; margin-top: 6px; }
+
+    .error {
+      max-width: 600px;
+      margin: 80px auto;
+      text-align: center;
+      background: rgba(255,80,80,0.1);
+      border: 1px solid rgba(255,80,80,0.3);
+      border-radius: 16px;
+      padding: 32px;
+      color: #ff8a80;
+    }
+
+    .refresh-note {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #3a5068;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Météo Paris</h1>
+<div class="subtitle" id="subtitle">Chargement…</div>
+
+<div id="app"></div>
+
+<script>
+const DAYS_FR = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+
+function fmt(date) {
+  const d = new Date(date);
+  return DAYS_FR[d.getDay()];
+}
+
+function windIcon(deg) {
+  const icons = ["↑","↗","→","↘","↓","↙","←","↖"];
+  return icons[Math.round(deg / 45) % 8];
+}
+
+function weatherIcon(desc) {
+  if (!desc) return "🌡️";
+  const d = desc.toLowerCase();
+  if (d.includes("dégagé") || d.includes("clair")) return "☀️";
+  if (d.includes("nuageux") || d.includes("couvert")) return "☁️";
+  if (d.includes("brouillard")) return "🌫️";
+  if (d.includes("neige")) return "❄️";
+  if (d.includes("orage")) return "⛈️";
+  if (d.includes("pluie") || d.includes("averse") || d.includes("bruine")) return "🌧️";
+  return "🌡️";
+}
+
+fetch("meteo.json")
+  .then(r => {
+    if (!r.ok) throw new Error("Fichier meteo.json introuvable — lancez d'abord meteo.py");
+    return r.json();
+  })
+  .then(data => {
+    const c = data.current;
+    const h = data.hourly;
+    const d = data.daily;
+
+    document.getElementById("subtitle").textContent =
+      `Mis à jour le ${new Date(data.retrieved_at).toLocaleString("fr-FR")}`;
+
+    const maxTemp = Math.max(...h.temperature);
+    const minTemp = Math.min(...h.temperature);
+    const maxRain = Math.max(...h.precipitation_probability, 1);
+
+    const hours24 = h.time.map(t => t.slice(11, 16));
+
+    document.getElementById("app").innerHTML = `
+      <!-- Current conditions -->
+      <div class="description-card">
+        ${weatherIcon(c.weather_description)} &nbsp; ${c.weather_description}
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">🌡️</div>
+          <div class="card-label">Température</div>
+          <div class="card-value">${c.temperature}<span class="card-unit">°C</span></div>
+          <div class="card-sub">Ressentie ${c.apparent_temperature}°C</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">💧</div>
+          <div class="card-label">Humidité</div>
+          <div class="card-value">${c.humidity}<span class="card-unit">%</span></div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌧️</div>
+          <div class="card-label">Précipitations</div>
+          <div class="card-value">${c.precipitation}<span class="card-unit">mm</span></div>
+        </div>
+        <div class="card">
+          <div class="card-icon">💨</div>
+          <div class="card-label">Vent</div>
+          <div class="card-value">${c.wind_speed}<span class="card-unit">km/h</span></div>
+          <div class="card-sub">${windIcon(c.wind_direction_deg)} ${c.wind_direction}</div>
+        </div>
+      </div>
+
+      <!-- Hourly temperature -->
+      <div class="section-title">Températures sur 24h</div>
+      <div class="chart-card">
+        <div class="chart-title">Température horaire (°C)</div>
+        <div class="bars" id="temp-bars">
+          ${h.temperature.map((t, i) => `
+            <div class="bar-wrap">
+              <div class="bar-val">${Math.round(t)}°</div>
+              <div class="bar temp" style="height:${Math.round(((t - minTemp) / (maxTemp - minTemp + 0.1)) * 100 + 10)}px"></div>
+              <div class="bar-label">${hours24[i]}</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+
+      <!-- Hourly rain probability -->
+      <div class="section-title">Probabilité de pluie sur 24h</div>
+      <div class="chart-card">
+        <div class="chart-title">Risque de pluie (%)</div>
+        <div class="bars">
+          ${h.precipitation_probability.map((p, i) => `
+            <div class="bar-wrap">
+              <div class="bar-val" style="color:#4fc3f7">${p}%</div>
+              <div class="bar rain" style="height:${Math.round((p / maxRain) * 100 + 2)}px"></div>
+              <div class="bar-label">${hours24[i]}</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+
+      <!-- 3-day forecast -->
+      <div class="section-title">Prévisions 3 jours</div>
+      <div class="daily-grid">
+        ${d.time.map((t, i) => `
+          <div class="day-card">
+            <div class="day-name">${i === 0 ? "Aujourd'hui" : fmt(t)}</div>
+            <div class="day-temps">${Math.round(d.temp_max[i])}°<span class="day-min"> / ${Math.round(d.temp_min[i])}°</span></div>
+            <div class="day-rain">🌧 ${d.precipitation_sum[i]} mm</div>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="refresh-note">Source : open-meteo.com · Relancez meteo.py pour actualiser</div>
+    `;
+  })
+  .catch(err => {
+    document.getElementById("app").innerHTML = `
+      <div class="error">
+        <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+        <strong>${err.message}</strong>
+        <p style="margin-top:8px;font-size:0.85rem;color:#aaa">Ouvrez ce fichier via un serveur local (ex: python -m http.server)</p>
+      </div>`;
+  });
+</script>
+</body>
+</html>
